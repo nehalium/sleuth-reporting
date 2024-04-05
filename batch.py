@@ -127,6 +127,62 @@ def extract_metrics(item, start_date, end_date, data):
     }
 
 
+def generate_metrics_row(item, start_date, end_date):
+    return {
+        "slug": item["slug"],
+        "name": item["name"],
+        "start_date": zulu_from_datetime(start_date),
+        "end_date": zulu_from_datetime(end_date),
+        "calendar_week": start_date.strftime('%V'),
+        "deploys": 0,
+        "avg_deploys": 0,
+        "lead_time_secs": 0,
+        "lead_time_days": 0,
+        "failure_rate": 0,
+        "mttr_secs": 0,
+        "mttr_minutes": 0
+    }
+
+
+def populate_metrics(headers, data):
+    for header, data_row in zip(headers, data):
+        populate_metrics_row(header, data_row)
+    return headers
+
+
+def populate_metrics_row(item, data):
+    item["deploys"] = data["data"]["organization"]["metricsRecap"]["numOfDeploys"]
+    item["avg_deploys"] = data["data"]["organization"]["metricsRecap"]["numOfDeploys"] / period_days
+    item["lead_time_secs"] = data["data"]["organization"]["metricsRecap"]["avgLeadTimeInSec"]
+    item["lead_time_days"] = seconds_to_days(data["data"]["organization"]["metricsRecap"]["avgLeadTimeInSec"])
+    item["failure_rate"] = data["data"]["organization"]["metricsRecap"]["failureRatePercent"]
+    item["mttr_secs"] = data["data"]["organization"]["metricsRecap"]["avgMttrDurationInSec"]
+    item["mttr_minutes"] = seconds_to_minutes(data["data"]["organization"]["metricsRecap"]["avgMttrDurationInSec"])
+
+
+def invoke_sleuth_batch_api(payload):
+    url = "https://app.sleuth.io/graphql-batch"
+    headers = {
+        "Content-Type": "application/json",
+        # Uncomment and replace with your actual token if authorization is required
+        "Authorization": f"Bearer {sleuth_token}"
+    }
+
+    response = requests.post(url, json=payload, headers=headers)
+    if response.status_code == 200:
+        # Parsing the response JSON
+        data = {
+            "status": "SUCCESS",
+            "payload": response.json()
+        }
+    else:
+        data = {
+            "status": "FAIL",
+            "error": response.text
+        }
+    return data
+
+
 def invoke_sleuth_api(query, variables):
     url = "https://app.sleuth.io/graphql"
     headers = {
@@ -196,7 +252,7 @@ def get_projects_page(cursor):
         raise Exception(data["error"])
 
 
-def get_project_metrics(project, start_date, end_date):
+def get_project_metrics_query(project, start_date, end_date):
     query = """
         query GetNumberOfProjectDeploys($orgSlug: ID!, $start: DateTime!, $end: DateTime!, $projectSlugs: [ID]) {
             organization(orgSlug: $orgSlug) {
@@ -221,9 +277,16 @@ def get_project_metrics(project, start_date, end_date):
         }}
     """
 
-    data = invoke_sleuth_api(query, variables)
+    return {
+        "query": query,
+        "variables": variables
+    }
+
+
+def get_batch_metrics(headers, queries):
+    data = invoke_sleuth_batch_api(queries)
     if data["status"] == "SUCCESS":
-        return extract_metrics(project, start_date, end_date, data["payload"])
+        return populate_metrics(headers, data["payload"])
     else:
         raise Exception(data["error"])
 
@@ -277,7 +340,7 @@ def get_teams_page(cursor):
         raise Exception(data["error"])
 
 
-def get_team_metrics(team, start_date, end_date):
+def get_team_metrics_query(team, start_date, end_date):
     query = """
         query GetNumberOfTeamDeploys($orgSlug: ID!, $start: DateTime!, $end: DateTime!, $teamSlugs: [ID]) {
             organization(orgSlug: $orgSlug) {
@@ -302,37 +365,44 @@ def get_team_metrics(team, start_date, end_date):
             }}
     """
 
-    data = invoke_sleuth_api(query, variables)
-    if data["status"] == "SUCCESS":
-        return extract_metrics(team, start_date, end_date, data["payload"])
-    else:
-        raise Exception(data["error"])
+    return {
+        "query": query,
+        "variables": variables
+    }
 
 
 def get_metrics_by_team(span):
-    metrics = []
+    queries = []
+    headers = []
 
     teams = get_teams()
     for team in teams:
         period = generate_period(span)
         while period["start"] < span["end"]:
             logging.info(f"TEAM={team["slug"]}, START={period["start"]}, END={period["end"]}")
-            metrics.append(get_team_metrics(team, period["start"], period["end"]))
+            headers.append(generate_metrics_row(team, period["start"], period["end"]))
+            queries.append(get_team_metrics_query(team, period["start"], period["end"]))
             period = increment_period(period)
+
+    metrics = get_batch_metrics(headers, queries)
 
     write_metrics_to_excel("Teams", metrics, teams)
 
 
 def get_metrics_by_project(span):
-    metrics = []
+    queries = []
+    headers = []
 
     projects = get_projects()
     for project in projects:
         period = generate_period(span)
         while period["start"] < span["end"]:
             logging.info(f"PROJECT={project["slug"]}, START={period["start"]}, END={period["end"]}")
-            metrics.append(get_project_metrics(project, period["start"], period["end"]))
+            headers.append(generate_metrics_row(project, period["start"], period["end"]))
+            queries.append(get_project_metrics_query(project, period["start"], period["end"]))
             period = increment_period(period)
+
+    metrics = get_batch_metrics(headers, queries)
 
     write_metrics_to_excel("Projects", metrics, projects)
 
