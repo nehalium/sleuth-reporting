@@ -16,6 +16,7 @@ org_slug = os.getenv("ORG_SLUG")
 
 # initialize globals
 period_days = 7
+output_dir = "output"
 
 
 def get_span():
@@ -54,13 +55,15 @@ def zulu_from_datetime(dt):
 
 
 def write_metrics_to_excel(metric_type, metrics, items):
-    file_name = f"sleuth-by-{metric_type.lower()}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.xlsx"
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+    file_name = f"{output_dir}/sleuth-by-{metric_type.lower()}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.xlsx"
     df = pd.DataFrame(metrics)
     writer = pd.ExcelWriter(file_name, engine="xlsxwriter")
     df.to_excel(writer, sheet_name=metric_type)
     for item in items:
         df_current=df.query(f"slug == '{item["slug"]}'")
-        df_current.T.to_excel(writer, sheet_name=item["name"])
+        df_current.T.to_excel(writer, sheet_name=item["name"][:30])
     writer.close()
 
 
@@ -332,3 +335,4 @@ def get_metrics_by_project():
 
 if __name__ == "__main__":
     get_metrics_by_team()
+    get_metrics_by_project()
