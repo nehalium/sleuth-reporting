@@ -1,6 +1,7 @@
 import requests
 from datetime import datetime, timedelta
 import os
+import sys
 from dotenv import load_dotenv
 import logging
 import warnings
@@ -20,16 +21,23 @@ output_dir = "output"
 
 
 def get_span():
+    if len(sys.argv) > 2:
+        return {
+            "start": datetime.strptime(sys.argv[1], '%Y-%m-%d'),
+            "end": datetime.strptime(sys.argv[2], '%Y-%m-%d')
+        }
+    else:
+        return {
+            "start": datetime(datetime.now().year, 1, 1, 0, 0, 0),
+            "end": datetime(datetime.now().year, 6, 30, 23, 59, 59)
+        }
+
+
+def generate_period(span):
     return {
-        "start": datetime(datetime.now().year, 1, 1, 0, 0, 0),
-        "end": datetime(datetime.now().year, 6, 30, 23, 59, 59)
+        "start": span["start"],
+        "end": get_next_period_start(span["start"])
     }
-
-
-def initialize_period(period, span):
-    period["start"] = span["start"]
-    period["end"] = get_next_period_start(period["start"])
-    return period
 
 
 def increment_period(period):
@@ -301,14 +309,12 @@ def get_team_metrics(team, start_date, end_date):
         raise Exception(data["error"])
 
 
-def get_metrics_by_team():
-    span = get_span()
-    period = get_span()
+def get_metrics_by_team(span):
     metrics = []
 
     teams = get_teams()
     for team in teams:
-        period = initialize_period(period, span)
+        period = generate_period(span)
         while period["start"] < span["end"]:
             logging.info(f"TEAM={team["slug"]}, START={period["start"]}, END={period["end"]}")
             metrics.append(get_team_metrics(team, period["start"], period["end"]))
@@ -317,14 +323,12 @@ def get_metrics_by_team():
     write_metrics_to_excel("Teams", metrics, teams)
 
 
-def get_metrics_by_project():
-    span = get_span()
-    period = get_span()
+def get_metrics_by_project(span):
     metrics = []
 
     projects = get_projects()
     for project in projects:
-        period = initialize_period(period, span)
+        period = generate_period(span)
         while period["start"] < span["end"]:
             logging.info(f"PROJECT={project["slug"]}, START={period["start"]}, END={period["end"]}")
             metrics.append(get_project_metrics(project, period["start"], period["end"]))
@@ -334,5 +338,6 @@ def get_metrics_by_project():
 
 
 if __name__ == "__main__":
-    get_metrics_by_team()
-    get_metrics_by_project()
+    run_span = get_span()
+    get_metrics_by_team(run_span)
+    get_metrics_by_project(run_span)
