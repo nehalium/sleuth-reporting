@@ -133,31 +133,20 @@ def generate_metrics_row(item, start_date, end_date):
         "name": item["name"],
         "start_date": zulu_from_datetime(start_date),
         "end_date": zulu_from_datetime(end_date),
-        "calendar_week": start_date.strftime('%V'),
-        "deploys": 0,
-        "avg_deploys": 0,
-        "lead_time_secs": 0,
-        "lead_time_days": 0,
-        "failure_rate": 0,
-        "mttr_secs": 0,
-        "mttr_minutes": 0
+        "calendar_week": int(start_date.strftime('%V'))
     }
 
 
 def populate_metrics(headers, data):
     for header, data_row in zip(headers, data):
-        populate_metrics_row(header, data_row)
+        header["deploys"] = data_row["data"]["organization"]["metricsRecap"]["numOfDeploys"]
+        header["avg_deploys"] = data_row["data"]["organization"]["metricsRecap"]["numOfDeploys"] / period_days
+        header["lead_time_secs"] = data_row["data"]["organization"]["metricsRecap"]["avgLeadTimeInSec"]
+        header["lead_time_days"] = seconds_to_days(data_row["data"]["organization"]["metricsRecap"]["avgLeadTimeInSec"])
+        header["failure_rate"] = data_row["data"]["organization"]["metricsRecap"]["failureRatePercent"]
+        header["mttr_secs"] = data_row["data"]["organization"]["metricsRecap"]["avgMttrDurationInSec"]
+        header["mttr_minutes"] = seconds_to_minutes(data_row["data"]["organization"]["metricsRecap"]["avgMttrDurationInSec"])
     return headers
-
-
-def populate_metrics_row(item, data):
-    item["deploys"] = data["data"]["organization"]["metricsRecap"]["numOfDeploys"]
-    item["avg_deploys"] = data["data"]["organization"]["metricsRecap"]["numOfDeploys"] / period_days
-    item["lead_time_secs"] = data["data"]["organization"]["metricsRecap"]["avgLeadTimeInSec"]
-    item["lead_time_days"] = seconds_to_days(data["data"]["organization"]["metricsRecap"]["avgLeadTimeInSec"])
-    item["failure_rate"] = data["data"]["organization"]["metricsRecap"]["failureRatePercent"]
-    item["mttr_secs"] = data["data"]["organization"]["metricsRecap"]["avgMttrDurationInSec"]
-    item["mttr_minutes"] = seconds_to_minutes(data["data"]["organization"]["metricsRecap"]["avgMttrDurationInSec"])
 
 
 def invoke_sleuth_batch_api(payload):
@@ -379,14 +368,17 @@ def get_metrics_by_team(span):
     for team in teams:
         period = generate_period(span)
         while period["start"] < span["end"]:
-            logging.info(f"TEAM={team["slug"]}, START={period["start"]}, END={period["end"]}")
             headers.append(generate_metrics_row(team, period["start"], period["end"]))
             queries.append(get_team_metrics_query(team, period["start"], period["end"]))
             period = increment_period(period)
 
+    logging.info(f"[{datetime.now()}] Running teams query...")
     metrics = get_batch_metrics(headers, queries)
 
+    logging.info(f"[{datetime.now()}] Writing results...")
     write_metrics_to_excel("Teams", metrics, teams)
+
+    logging.info(f"[{datetime.now()}] Done.")
 
 
 def get_metrics_by_project(span):
@@ -397,14 +389,17 @@ def get_metrics_by_project(span):
     for project in projects:
         period = generate_period(span)
         while period["start"] < span["end"]:
-            logging.info(f"PROJECT={project["slug"]}, START={period["start"]}, END={period["end"]}")
             headers.append(generate_metrics_row(project, period["start"], period["end"]))
             queries.append(get_project_metrics_query(project, period["start"], period["end"]))
             period = increment_period(period)
 
+    logging.info(f"[{datetime.now()}] Running projects query...")
     metrics = get_batch_metrics(headers, queries)
 
+    logging.info(f"[{datetime.now()}] Writing results...")
     write_metrics_to_excel("Projects", metrics, projects)
+
+    logging.info(f"[{datetime.now()}] Done.")
 
 
 if __name__ == "__main__":

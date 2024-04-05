@@ -116,7 +116,7 @@ def extract_metrics(item, start_date, end_date, data):
         "name": item["name"],
         "start_date": zulu_from_datetime(start_date),
         "end_date": zulu_from_datetime(end_date),
-        "calendar_week": start_date.strftime('%V'),
+        "calendar_week": int(start_date.strftime('%V')),
         "deploys": data["data"]["organization"]["metricsRecap"]["numOfDeploys"],
         "avg_deploys": data["data"]["organization"]["metricsRecap"]["numOfDeploys"] / period_days,
         "lead_time_secs": data["data"]["organization"]["metricsRecap"]["avgLeadTimeInSec"],
