@@ -70,8 +70,7 @@ def write_metrics_to_excel(metric_type, metrics, items):
     writer = pd.ExcelWriter(file_name, engine="xlsxwriter")
     df.to_excel(writer, sheet_name=metric_type)
     for item in items:
-        df_current=df.query(f"slug == '{item["slug"]}'")
-        df_current.T.to_excel(writer, sheet_name=item["name"][:30])
+        df.query(f"slug == '{item["slug"]}'").transpose().to_excel(writer, sheet_name=item["name"][:30])
     writer.close()
 
 
@@ -110,30 +109,13 @@ def extract_teams_list(data):
     return teams_list
 
 
-def extract_metrics(item, start_date, end_date, data):
-    return {
-        "slug": item["slug"],
-        "name": item["name"],
-        "start_date": zulu_from_datetime(start_date),
-        "end_date": zulu_from_datetime(end_date),
-        "calendar_week": start_date.strftime('%V'),
-        "deploys": data["data"]["organization"]["metricsRecap"]["numOfDeploys"],
-        "avg_deploys": data["data"]["organization"]["metricsRecap"]["numOfDeploys"] / period_days,
-        "lead_time_secs": data["data"]["organization"]["metricsRecap"]["avgLeadTimeInSec"],
-        "lead_time_days": seconds_to_days(data["data"]["organization"]["metricsRecap"]["avgLeadTimeInSec"]),
-        "failure_rate": data["data"]["organization"]["metricsRecap"]["failureRatePercent"],
-        "mttr_secs": data["data"]["organization"]["metricsRecap"]["avgMttrDurationInSec"],
-        "mttr_minutes": seconds_to_minutes(data["data"]["organization"]["metricsRecap"]["avgMttrDurationInSec"])
-    }
-
-
 def generate_metrics_row(item, start_date, end_date):
     return {
-        "slug": item["slug"],
-        "name": item["name"],
+        "calendar_week": f"{start_date.year} - {start_date.strftime("%V")}",
         "start_date": zulu_from_datetime(start_date),
         "end_date": zulu_from_datetime(end_date),
-        "calendar_week": int(start_date.strftime('%V'))
+        "slug": item["slug"],
+        "name": item["name"]
     }
 
 

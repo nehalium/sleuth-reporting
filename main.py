@@ -112,11 +112,11 @@ def extract_teams_list(data):
 
 def extract_metrics(item, start_date, end_date, data):
     return {
-        "slug": item["slug"],
-        "name": item["name"],
+        "calendar_week": f"{start_date.year} - {start_date.strftime("%V")}",
         "start_date": zulu_from_datetime(start_date),
         "end_date": zulu_from_datetime(end_date),
-        "calendar_week": int(start_date.strftime('%V')),
+        "slug": item["slug"],
+        "name": item["name"],
         "deploys": data["data"]["organization"]["metricsRecap"]["numOfDeploys"],
         "avg_deploys": data["data"]["organization"]["metricsRecap"]["numOfDeploys"] / period_days,
         "lead_time_secs": data["data"]["organization"]["metricsRecap"]["avgLeadTimeInSec"],
