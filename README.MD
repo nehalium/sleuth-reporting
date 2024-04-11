@@ -13,10 +13,6 @@ A small app to pull data from Sleuth.io.
 
 1. Clone the repository:
 
-    ```shell
-    git clone https://github.com/username/project.git
-    ```
-
 1. Create and activate a virtual environment:
 
     ```shell
@@ -37,26 +33,36 @@ For example:
     ```plaintext
     SLEUTH_PERSONAL_TOKEN=(your personal sleuth token)
     ```
-1. Run the application:
+1. Run the application.
 
-    ```shell
-    python main.py
-    ```
-    pulls all the stuff and writes it to an excel in your CWD.
+   1. To run in basic mode:
 
+       ```shell
+       python main.py
+       ```
+
+   1. To run in batch mode (much quicker):
+
+      ```shell
+       python batch.py
+       ```
+
+   All commands generate an Excel file in an `output` folder in your CWD.
 
 ## Environment Variables
 
 `SLEUTH_PERSONAL_TOKEN`
+
 This is the token used for API access. Get it from https://app.sleuth.io/account/personal_tokens.
 
 `ORG_SLUG` 
+
 This is the organization slug for your organization.
 
 ## Contributing
 
-
+TBD
 
 ## License
 
-
+TBD
