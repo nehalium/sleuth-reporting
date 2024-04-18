@@ -4,14 +4,15 @@ from dateTimeUtils import DateTimeUtils
 from dotenv import load_dotenv
 
 load_dotenv()
-org_slug = os.getenv("ORG_SLUG")
 
 
 class SleuthApi:
     sleuth_token = ""
+    org_slug = ""
 
     def __init__(self):
         self.sleuth_token = os.getenv("SLEUTH_PERSONAL_TOKEN")
+        self.org_slug = os.getenv("ORG_SLUG")
 
     def invoke(self, query, variables):
         return self.invoke_internal({
@@ -92,7 +93,7 @@ class SleuthApi:
 
         variables = f"""
             {{
-                "orgSlug": "{org_slug}",
+                "orgSlug": "{self.org_slug}",
                 "after": "{cursor}"
             }}
         """
@@ -153,7 +154,7 @@ class SleuthApi:
 
         variables = f"""
             {{
-                "orgSlug": "{org_slug}",
+                "orgSlug": "{self.org_slug}",
                 "after": "{cursor}"
             }}
         """
@@ -185,8 +186,7 @@ class SleuthApi:
                 teams_list["total_count"] += 1
         return teams_list
 
-    @staticmethod
-    def get_project_metrics_query(project, start_date, end_date):
+    def get_project_metrics_query(self, project, start_date, end_date):
         query = """
             query GetNumberOfProjectDeploys($orgSlug: ID!, $start: DateTime!, $end: DateTime!, $projectSlugs: [ID]) {
                 organization(orgSlug: $orgSlug) {
@@ -202,7 +202,7 @@ class SleuthApi:
 
         variables = f"""
             {{
-                "orgSlug": "{org_slug}",
+                "orgSlug": "{self.org_slug}",
                 "start": "{DateTimeUtils.zulu_from_datetime(start_date)}",
                 "end": "{DateTimeUtils.zulu_from_datetime(end_date)}",
                 "projectSlugs": [
@@ -216,8 +216,7 @@ class SleuthApi:
             "variables": variables
         }
 
-    @staticmethod
-    def get_team_metrics_query(team, start_date, end_date):
+    def get_team_metrics_query(self, team, start_date, end_date):
         query = """
             query GetNumberOfTeamDeploys($orgSlug: ID!, $start: DateTime!, $end: DateTime!, $teamSlugs: [ID]) {
                 organization(orgSlug: $orgSlug) {
@@ -233,7 +232,7 @@ class SleuthApi:
 
         variables = f"""
                 {{
-                    "orgSlug": "{org_slug}",
+                    "orgSlug": "{self.org_slug}",
                     "start": "{DateTimeUtils.zulu_from_datetime(start_date)}",
                     "end": "{DateTimeUtils.zulu_from_datetime(end_date)}",
                     "teamSlugs": [
@@ -257,7 +256,7 @@ class SleuthApi:
     @staticmethod
     def generate_metrics_header(item, start_date, end_date):
         return {
-            "calendar_week": f"{start_date.year} - {start_date.strftime("%V")}",
+            "calendar_week": f"{start_date.year}.{start_date.strftime("%V")}",
             "start_date": DateTimeUtils.zulu_from_datetime(start_date),
             "end_date": DateTimeUtils.zulu_from_datetime(end_date),
             "slug": item["slug"],
