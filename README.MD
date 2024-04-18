@@ -32,6 +32,7 @@ A small app to pull data from Sleuth.io.
 For example:
     ```plaintext
     SLEUTH_PERSONAL_TOKEN=(your personal sleuth token)
+   ORG_SLUG=(your org slug from Sleuth)
     ```
 1. Run the application.
 
