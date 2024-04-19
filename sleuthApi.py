@@ -7,10 +7,12 @@ load_dotenv()
 
 
 class SleuthApi:
+    base_url = ""
     sleuth_token = ""
     org_slug = ""
 
     def __init__(self):
+        self.base_url = "https://app.sleuth.io"
         self.sleuth_token = os.getenv("SLEUTH_PERSONAL_TOKEN")
         self.org_slug = os.getenv("ORG_SLUG")
 
@@ -21,48 +23,38 @@ class SleuthApi:
         })
 
     def invoke_internal(self, payload):
-        url = "https://app.sleuth.io/graphql"
-        headers = {
-            "Content-Type": "application/json",
-            # Uncomment and replace with your actual token if authorization is required
-            "Authorization": f"Bearer {self.sleuth_token}"
-        }
-
+        url = f"{self.base_url}/graphql"
+        headers = self.get_request_headers()
         response = requests.post(url, json=payload, headers=headers)
-        if response.status_code == 200:
-            # Parsing the response JSON
-            data = {
-                "status": "SUCCESS",
-                "payload": response.json()
-            }
-        else:
-            data = {
-                "status": "FAIL",
-                "error": response.text
-            }
-        return data
+        return self.extract_response_message(response)
 
     def invoke_batch(self, payload):
-        url = "https://app.sleuth.io/graphql-batch"
-        headers = {
+        url = f"{self.base_url}/graphql-batch"
+        headers = self.get_request_headers()
+        response = requests.post(url, json=payload, headers=headers)
+        return self.extract_response_message(response)
+
+    def get_request_headers(self):
+        return {
             "Content-Type": "application/json",
-            # Uncomment and replace with your actual token if authorization is required
-            "Authorization": f"Bearer {self.sleuth_token}"
+            "Authorization": self.get_authorization_header()
         }
 
-        response = requests.post(url, json=payload, headers=headers)
+    def get_authorization_header(self):
+        return f"Bearer {self.sleuth_token}"
+
+    @staticmethod
+    def extract_response_message(response):
         if response.status_code == 200:
-            # Parsing the response JSON
-            data = {
+            return {
                 "status": "SUCCESS",
                 "payload": response.json()
             }
         else:
-            data = {
+            return {
                 "status": "FAIL",
                 "error": response.text
             }
-        return data
 
     def get_projects(self):
         projects_list = self.get_projects_page("")
