@@ -267,7 +267,7 @@ class SleuthApi:
 
     @staticmethod
     def populate_metrics(header, data):
-        period_days = DateTimeUtils.diff_days(header["start_date"], header["end_date"])
+        period_days = DateTimeUtils.diff_days_str(header["start_date"], header["end_date"])
         metrics_row = data["data"]["organization"]["metricsRecap"]
         header["deploys"] = metrics_row["numOfDeploys"]
         header["avg_deploys"] = metrics_row["numOfDeploys"] / period_days

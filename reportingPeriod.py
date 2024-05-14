@@ -11,6 +11,7 @@ class ReportingPeriod:
     def __init__(self, period_days):
         self.period_days = period_days
         self.time_span = self.get_span()
+        self.validate_span()
 
     @property
     def span(self):
@@ -30,8 +31,13 @@ class ReportingPeriod:
         else:
             return {
                 "start": datetime(datetime.now().year, 1, 1, 0, 0, 0),
-                "end": datetime(datetime.now().year, 6, 30, 23, 59, 59)
+                "end": datetime(datetime.now().year, 7, 31, 23, 59, 59)
             }
+
+    def validate_span(self):
+        span_days = DateTimeUtils.diff_days(self.time_span["start"], self.time_span["end"])
+        if span_days > 270:
+            raise Exception("Time span too large for batch API.")
 
     def reset_slice(self):
         self.time_slice = {

@@ -1,15 +1,10 @@
-
-
-
 bin/
 include/
 lib/
 .env
 *.xlsx
-
 pyvenv.cfg
-
-
+run.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

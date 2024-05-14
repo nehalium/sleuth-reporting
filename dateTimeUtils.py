@@ -10,8 +10,12 @@ class DateTimeUtils:
 
     @staticmethod
     def diff_days(start_date, end_date):
-        delta = DateTimeUtils.str_to_date(end_date) - DateTimeUtils.str_to_date(start_date)
+        delta = end_date - start_date
         return delta.days
+
+    @staticmethod
+    def diff_days_str(start_date_as_str, end_date_as_str):
+        return DateTimeUtils.diff_days(DateTimeUtils.str_to_date(start_date_as_str), DateTimeUtils.str_to_date(end_date_as_str))
 
     @staticmethod
     def str_to_date(date_as_str):
