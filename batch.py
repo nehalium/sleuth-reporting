@@ -11,6 +11,8 @@ def get_metrics_by_team(period):
     queries = []
     headers = []
 
+    logging.info(f"[{datetime.now()}] Querying for teams: {period.time_span["start"]} - {period.time_span["end"]}")
+
     sleuth_api = SleuthApi()
     teams = sleuth_api.get_teams()
     for team in teams:
@@ -33,6 +35,8 @@ def get_metrics_by_team(period):
 def get_metrics_by_project(period):
     queries = []
     headers = []
+
+    logging.info(f"[{datetime.now()}] Querying for projects: {period.time_span["start"]} - {period.time_span["end"]}")
 
     sleuth_api = SleuthApi()
     projects = sleuth_api.get_projects()

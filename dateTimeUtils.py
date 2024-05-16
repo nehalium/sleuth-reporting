@@ -9,9 +9,21 @@ class DateTimeUtils:
         return current_date + timedelta(days=num_of_days)
 
     @staticmethod
+    def add_weeks(num_of_weeks, current_date):
+        return current_date + timedelta(weeks=num_of_weeks)
+
+    @staticmethod
     def diff_days(start_date, end_date):
         delta = end_date - start_date
         return delta.days
+
+    @staticmethod
+    def shift_to_weekday(week_day, current_date, shift_forward=False):
+        days_to_shift = (current_date.weekday() - week_day + 7) % 7
+        if shift_forward:
+            return DateTimeUtils.add_days(days_to_shift, current_date)
+        else:
+            return DateTimeUtils.add_days(-days_to_shift, current_date)
 
     @staticmethod
     def diff_days_str(start_date_as_str, end_date_as_str):

@@ -4,7 +4,10 @@ from dateTimeUtils import DateTimeUtils
 
 
 class ReportingPeriod:
-    period_days = 7
+    period_days = 7  # 1 week
+    start_weekday = 0  # Monday
+    start_offset_weeks = 12  # 3 months
+    end_offset_weeks = 1  # 1 week
     time_span = {}
     time_slice = {}
 
@@ -21,23 +24,29 @@ class ReportingPeriod:
     def slice(self):
         return self.time_slice
 
-    @staticmethod
-    def get_span():
+    def get_span(self):
         if len(sys.argv) > 2:
             return {
                 "start": datetime.strptime(sys.argv[1], '%Y-%m-%d'),
                 "end": datetime.strptime(sys.argv[2], '%Y-%m-%d')
             }
         else:
+            today = datetime.now()
+            start_date = DateTimeUtils.add_weeks(-self.start_offset_weeks, today)
+            start_date = DateTimeUtils.shift_to_weekday(self.start_weekday, start_date)
+            start_date = datetime(start_date.year, start_date.month, start_date.day, 0, 0, 0)
+            end_date = DateTimeUtils.add_weeks(self.end_offset_weeks, today)
+            end_date = DateTimeUtils.shift_to_weekday((6 + self.start_weekday) % 7, end_date)
+            end_date = datetime(end_date.year, end_date.month, end_date.day, 23, 59, 59)
             return {
-                "start": datetime(datetime.now().year, 1, 1, 0, 0, 0),
-                "end": datetime(datetime.now().year, 6, 30, 23, 59, 59)
+                "start": start_date,
+                "end": end_date
             }
 
     def validate_span(self):
         span_days = DateTimeUtils.diff_days(self.time_span["start"], self.time_span["end"])
         if span_days > 200:
-            raise Exception("Time span too large for batch API.")
+            raise Warning("Time span is very large for the API.")
 
     def reset_slice(self):
         self.time_slice = {
